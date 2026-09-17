@@ -2,6 +2,7 @@
 
 Drop a photo. Watch a working webpage recolour itself. Export the result.
 
+[Live playground](https://hueframe.on-forge.com/) ·
 [Package documentation](packages/hueframe/README.md) · [IndexLane](https://indexlane.dev)
 
 `hueframe` is a framework-independent TypeScript package that turns an image into a usable website
@@ -20,6 +21,10 @@ Both are part of one npm workspace. There is no application code in the package 
 in the demo — the demo only renders what the package returns.
 
 ## Try the playground
+
+Open the [live playground](https://hueframe.on-forge.com/) to try hueframe in your browser.
+
+To run it locally:
 
 ```bash
 npm install

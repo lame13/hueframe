@@ -11,6 +11,7 @@ It works in browsers and Node.js, has no runtime dependencies, and includes Type
 
 Created by [Niko Minadze](https://indexlane.dev) at **IndexLane**.
 
+[Live playground](https://hueframe.on-forge.com/) ·
 [GitHub](https://github.com/lame13/hueframe) ·
 [Report an issue](https://github.com/lame13/hueframe/issues) ·
 [IndexLane](https://indexlane.dev)
@@ -239,8 +240,11 @@ for the full API; type declarations are included in the package.
 
 ## Try the playground
 
-The [GitHub repository](https://github.com/lame13/hueframe) includes a Next.js playground with
-sample photos, editable roles, and two page templates. To run it locally:
+Try the [live playground](https://hueframe.on-forge.com/) with sample photos, editable roles,
+and two page templates.
+
+The [GitHub repository](https://github.com/lame13/hueframe) includes the playground source.
+To run it locally:
 
 ```bash
 git clone https://github.com/lame13/hueframe.git

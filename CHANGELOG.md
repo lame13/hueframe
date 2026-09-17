@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.0.3 - 2026-09-17
+
+### Fixed
+
+- Fix Chrome showing a previous playground background after changing a sample photo, uploaded
+  image, or theme. Remove the scrolling preview's background-colour animation so the new colour
+  appears without requiring a hover or another repaint.
+
+### Added
+
+- Live playground links in the repository and npm package READMEs.
+
 ## 1.0.2 - 2026-09-17
 
 ### Fixed
