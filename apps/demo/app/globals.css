@@ -58,7 +58,7 @@ button {
   border: 0;
 }
 
-:where(button, input, [tabindex]):focus-visible {
+:where(button, input, a[href], [tabindex]):focus-visible {
   outline: 2px solid var(--chrome-dark);
   outline-offset: 2px;
 }
@@ -118,6 +118,7 @@ button {
 
 .app-header__actions {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 10px;
 }
@@ -1502,8 +1503,13 @@ button {
 
 @media (max-width: 640px) {
   .app-header {
+    flex-wrap: wrap;
     padding: 10px 14px;
     gap: 12px;
+  }
+
+  .app-header__actions {
+    margin-left: auto;
   }
 
   .app-header__subtitle {

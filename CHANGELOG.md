@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.0.1 - 2026-09-17
+
+### Added
+
+- GitHub icon link beside Export CSS, opening the hueframe repository in a new tab
+  with an accessible label.
+
+### Fixed
+
+- Visible keyboard focus for links.
+- Header actions wrap on narrow screens to keep the export button and repository link together.
+
 ## 1.0.0 - 2026-09-17
 
 Initial release of hueframe.

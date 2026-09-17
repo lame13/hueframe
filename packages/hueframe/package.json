@@ -1,6 +1,6 @@
 {
   "name": "hueframe",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Extract colours from an image, turn them into a usable website theme, and export CSS variables or JSON design tokens. Zero dependencies, framework independent.",
   "license": "MIT",
   "type": "module",

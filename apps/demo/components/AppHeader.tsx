@@ -1,6 +1,6 @@
 'use client';
 
-import { BrandMark } from './icons';
+import { BrandMark, GitHubIcon } from './icons';
 
 interface AppHeaderProps {
   readonly canReset: boolean;
@@ -27,6 +27,16 @@ export function AppHeader({ canReset, canExport, onReset, onExport }: AppHeaderP
         <button type="button" className="btn btn--dark" onClick={onExport} disabled={!canExport}>
           Export CSS
         </button>
+        <a
+          className="icon-btn"
+          href="https://github.com/lame13/hueframe"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="View hueframe on GitHub (opens in a new tab)"
+          title="View hueframe on GitHub (opens in a new tab)"
+        >
+          <GitHubIcon width={20} height={20} />
+        </a>
       </div>
     </header>
   );
