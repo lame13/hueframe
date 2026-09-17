@@ -2,6 +2,8 @@
 
 Drop a photo. Watch a working webpage recolour itself. Export the result.
 
+[Package documentation](packages/hueframe/README.md) · [IndexLane](https://indexlane.dev)
+
 `hueframe` is a framework-independent TypeScript package that turns an image into a usable website
 theme — background, surface, text, primary and accent — then exports it as CSS variables or JSON
 design tokens. This repo also ships a Next.js playground that puts the package in front of a
@@ -127,5 +129,7 @@ Repository notes:
 ## Licence
 
 MIT
+
+Created by [Niko Minadze](https://indexlane.dev) at IndexLane.
 
 See [CHANGELOG.md](CHANGELOG.md) for release history.

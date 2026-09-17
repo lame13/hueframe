@@ -1,156 +1,257 @@
 # hueframe
 
-Extract the colours from an image, turn them into a website theme, and export it as CSS variables or
-JSON design tokens.
+Turn a photo into a website colour scheme.
 
-- Zero dependencies, no DOM and no framework assumptions — pass `ImageData`, a raw RGBA buffer, or a
-  list of hex colours.
-- Deterministic: the same input, seed and variation always produce the same theme.
-- Adjusts what it samples. A photo's colours are raw material, not finished roles.
+hueframe extracts a palette, builds light and dark themes, and exports CSS variables or JSON design
+tokens. You get colours for the page background, surfaces, text, primary actions, and accents,
+plus label colours for buttons.
+
+Use it for a theme picker, a site builder, or a page that takes its colours from a cover image.
+It works in browsers and Node.js, has no runtime dependencies, and includes TypeScript types.
+
+Created by [Niko Minadze](https://indexlane.dev) at **IndexLane**.
+
+[GitHub](https://github.com/lame13/hueframe) ·
+[Report an issue](https://github.com/lame13/hueframe/issues) ·
+[IndexLane](https://indexlane.dev)
+
+## Install
 
 ```bash
 npm install hueframe
 ```
 
-```ts
+The package ships compiled JavaScript and type declarations. Use ESM `import`; no build step is
+needed to use the installed package. For Node.js, use version 20.9 or later.
+
+## Make your first theme
+
+Start with a few colours so you can try the full flow without loading an image:
+
+```js
 import { extractPalette, createThemeSet, exportThemeSetCss } from 'hueframe';
 
-const palette = extractPalette(imageData, { count: 5 });
+const palette = extractPalette([
+  '#234c45',
+  '#80a18a',
+  '#d2a467',
+  '#f3eee4',
+  '#292d32',
+]);
+
 const themes = createThemeSet(palette);
+const css = exportThemeSetCss(themes);
 
-exportThemeSetCss(themes, { includePalette: true });
+console.log(css);
 ```
 
-## 1. Extract
+The result contains a `:root` block for the light theme and a `[data-theme="dark"]` block for
+the dark theme. Save it in your stylesheet, then use the variables:
 
-```ts
-extractPalette(source, options?): SampledColor[]
+```css
+body {
+  background: var(--hf-background);
+  color: var(--hf-text);
+}
+
+.card {
+  background: var(--hf-surface);
+}
+
+.button {
+  background: var(--hf-primary);
+  color: var(--hf-on-primary);
+}
 ```
 
-`source` is `{ data, width, height }` — anything shaped like `ImageData`, including a Node `Buffer`
-— or a `string[]` of hex colours. Pixels are sampled, converted to Oklab, clustered with seeded
-k-means, then condensed: colours covering less than `minPopulation` of the picture are dropped so
-stray pixels never become theme colours.
+Set `data-theme="dark"` on your `<html>` element to switch modes. To generate an additional
+`prefers-color-scheme: dark` media query, pass `{ prefersColorScheme: true }` to
+`exportThemeSetCss`. That media query follows the system setting even if you set a light theme
+manually, so omit it when your application manages the mode itself.
 
-| Option             | Default | Meaning                                    |
-| ------------------ | ------- | ------------------------------------------ |
-| `count`            | `6`     | How many colours to return.                |
-| `seed`             | `1`     | Cluster seed; the result is deterministic. |
-| `maxSamples`       | `24000` | Upper bound on pixels inspected.           |
-| `ignoreAlphaBelow` | `125`   | Transparent pixels are skipped.            |
-| `mergeThreshold`   | `0.045` | Oklab distance under which clusters merge. |
-| `minPopulation`    | `0.008` | Minimum share of the image for a colour.   |
+## Use an image
 
-Each result is `{ hex, rgb, population }`, sorted by how much of the image it covers. Populations are
-normalised to sum to 1.
+`extractPalette` accepts either a list of hex colours or an object containing decoded RGBA pixels:
+`{ data, width, height }`. Browser `ImageData` already has that shape.
 
-## 2. Generate
+### In a browser
 
-```ts
-generateTheme(palette, options?): Theme
-createThemeSet(palette, options?): ThemeSet          // { palette, light, dark }
-regenerateTheme(theme, options?): Theme              // next variation, locked roles preserved
-setRoleColor(theme, role, hex): Theme                // user-authored; labels recalculated
-setRoleLocked(theme, role, locked): Theme
-themeColors(theme): Record<ThemeRole, string>
+This helper reads a local `File`, scales it to a maximum of 360 pixels on its longest edge, and
+returns its dominant colours. Nothing is uploaded.
+
+```js
+import { extractPalette } from 'hueframe';
+
+async function paletteFromFile(file) {
+  const image = await createImageBitmap(file);
+
+  try {
+    const scale = Math.min(1, 360 / Math.max(image.width, image.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(image.width * scale));
+    canvas.height = Math.max(1, Math.round(image.height * scale));
+
+    const context = canvas.getContext('2d');
+    if (!context) throw new Error('A 2D canvas context is unavailable.');
+
+    context.drawImage(image, 0, 0, canvas.width, canvas.height);
+    const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+    return extractPalette(pixels, { count: 5 });
+  } finally {
+    image.close();
+  }
+}
 ```
 
-`ThemeOptions`:
+Call `await paletteFromFile(file)` from your file input, drop handler, or clipboard handler, then
+pass the palette to `createThemeSet`. If the image has no eligible pixels, such as a fully
+transparent image, extraction returns `[]`; check for that before generating a theme.
 
-| Option        | Default   | Meaning                                                     |
-| ------------- | --------- | ----------------------------------------------------------- |
-| `mode`        | `'light'` | `'light'` or `'dark'`.                                       |
-| `variation`   | `0`       | Which variation to generate. Bounded and deterministic.       |
-| `seed`        | `1`       | Seed for the colour search.                                  |
-| `locked`      | `[]`      | Roles to keep exactly as they are.                            |
-| `overrides`   | `{}`      | Explicit colours per role; wins over everything else.         |
-| `readability` | see below | Contrast targets: `{ text: 7, ink: 4.5, ui: 3 }`.            |
+### In Node.js
 
-Five roles mean the same thing in both modes:
+Pass decoded RGBA bytes as `data`, with the image dimensions. A `Buffer` or `Uint8ClampedArray`
+works. This small example represents a two-pixel image:
 
-| Role         | Used for                       |
-| ------------ | ------------------------------ |
-| `background` | the page                       |
-| `surface`    | raised cards and section bands |
-| `text`       | body copy and headings         |
-| `primary`    | the main action                |
-| `accent`     | the secondary colour           |
+```js
+import { extractPalette } from 'hueframe';
 
-`Theme` also carries `readableInk.onPrimary` / `readableInk.onAccent` — label colours that stay
-readable on those fills — plus the sampled `palette` the theme came from. The labels are chosen
-from the fills that actually ship, so an `overrides` value, a locked colour, or a later
-`setRoleColor` gets a readable label too: force `primary` to `#ffffff` and `readableInk.onPrimary`
-comes back dark, not white.
+const palette = extractPalette({
+  data: new Uint8ClampedArray([
+    35, 76, 69, 255,
+    210, 164, 103, 255,
+  ]),
+  width: 2,
+  height: 1,
+});
 
-### How the roles are chosen
-
-The page takes the lightest (or darkest) colour, pulled into a usable lightness range. The surface
-sits one step away, tinted towards the palette's most chromatic colour. Ink takes the opposite end of
-the palette and keeps its hue. The primary is the most vivid colour held near a mid lightness; the
-accent is the next vivid colour at least 40° of hue away. Text and labels are then moved along their
-own lightness axis until they clear the contrast targets, and fills are nudged until they stay
-distinct from the page.
-
-### Variations
-
-`variation` changes the picks among near-equal candidates and the derived treatments (surface depth,
-tint, chroma) — never the contract: every variation is still a readable theme.
-`regenerateTheme` freezes locked roles into explicit values before re-deriving, so a locked colour
-survives the change byte for byte.
-
-## 3. Export
-
-```ts
-themeToCssVariables(theme, options?): Record<string, string>
-exportCssVariables(theme, options?): string
-exportThemeSetCss(set, options?): string
-
-exportJsonTokens(theme, options?): ThemeTokens
-exportJsonTokensString(theme, options?): string
-exportThemeSetJson(set, options?): { light: ThemeTokens; dark: ThemeTokens }
+console.log(palette); // Each entry has hex, rgb, and population.
 ```
 
-CSS output is a block of custom properties — `--hf-background`, `--hf-surface`, `--hf-text`,
-`--hf-primary`, `--hf-accent`, `--hf-on-primary`, `--hf-on-accent`, plus `--hf-sample-N` when asked.
-`color-scheme` is included, and a set can emit a dark block via `darkSelector` (default
-`[data-theme="dark"]`) and/or `@media (prefers-color-scheme: dark)` with `prefersColorScheme: true`.
-Set `prefix`, `selector` and `indent` to match an existing design system.
+hueframe does not download images or decode JPEG, PNG, or WebP files. Decode the file with your
+image library first. An encoded file buffer, URL, or file path cannot be passed directly.
 
-JSON output follows the DTCG shape (`$type` / `$value` / `$description`, palette weights as
-`$extensions`) and can include the contrast report.
+### Extraction options
 
-## Contrast
-
-```ts
-checkThemeContrast(theme): ContrastCheck[]        // the six pairs that matter on a page
-isThemeReadable(theme, readability?): boolean     // every text pair meets its target
-
-contrastRatio(a, b): number
-rateContrast(ratio): { aa, aaa, aaLarge }
-pickReadableInk(background, { candidates, target }): string
-enforceContrast(foreground, background, { target, direction, maxShift }): string
+```js
+extractPalette(imageData, { count: 5, seed: 1 });
 ```
 
-`enforceContrast` moves a colour along its own lightness axis, keeping hue and chroma, so a terracotta
-stays a terracotta while it becomes readable. It never moves more than `maxShift` of lightness —
-`maxShift: 0` returns the colour untouched — and when the target is out of reach it returns the best
-colour it found rather than one that reads worse.
+| Option | Default | What it controls |
+| --- | --- | --- |
+| `count` | `6` | Maximum number of colours returned. |
+| `seed` | `1` | Seed used when clustering image pixels. |
+| `maxSamples` | `24000` | Sampling budget for large images. |
+| `ignoreAlphaBelow` | `125` | Skip pixels whose alpha is below this value. |
+| `mergeThreshold` | `0.045` | Merge image clusters this close in Oklab. |
+| `minPopulation` | `0.008` | Filter small image clusters, keeping the largest if all are below the threshold. |
 
-## Colour utilities
+Results are sorted by population: the share of retained samples represented by each colour.
+Image weights are rounded to four decimal places, so their total can differ slightly from 1.
+The same input and options produce the same result. For hex lists, repeated colours determine
+population; image sampling and clustering options do not apply.
 
-Everything the pipeline uses is exported: `parseHex`, `normalizeHex`, `isHexColor`, `rgbToHex`,
-`rgbToHsl`, `hslToHex`, `rgbToOklab`, `oklabToRgb`, `oklabToHex`, `deltaEOk`, `colorDistance`,
-`mixOklab`, `retune`, `rotateOklabHue`, `scaleOklabChroma`, `setOklabLightness`, `hueDistance`,
-`oklabChroma`, `oklabHue`, `relativeLuminance`, `toHex`, `toRgb`, `clamp`, plus the types (`Rgb`,
-`Hsl`, `Oklab`, `Theme`, `ThemeSet`, `ThemeRole`, `SampledColor`, `ContrastCheck`, …).
+## Adjust the theme
 
-## Notes
+Each theme contains five roles:
 
-- ESM only. Build with `npm run build` (tsc) before consuming.
-- No network, no filesystem access, no DOM assumptions at runtime.
-- `extractPalette` expects RGBA data with 4 bytes per pixel. Downscale large photos first — a 360px
-  long edge is enough for dominant colours and keeps the pass in milliseconds.
+| Role | Use it for |
+| --- | --- |
+| `background` | The page background. |
+| `surface` | Cards, panels, and section backgrounds. |
+| `text` | Body text and headings. |
+| `primary` | Main action fills. |
+| `accent` | Secondary highlights. |
 
-## Licence
+Read a role from `theme.roles.primary.hex`, or call `themeColors(theme)` to get a flat map.
+For text on coloured buttons, use `theme.readableInk.onPrimary` and `theme.readableInk.onAccent`.
 
-MIT
+You can edit a colour, lock it, and generate another variation around it:
+
+```js
+import {
+  extractPalette,
+  generateTheme,
+  setRoleColor,
+  setRoleLocked,
+  regenerateTheme,
+  themeColors,
+} from 'hueframe';
+
+const palette = extractPalette(['#234c45', '#80a18a', '#d2a467', '#f3eee4']);
+let theme = generateTheme(palette, { mode: 'light' });
+
+theme = setRoleColor(theme, 'primary', '#315b50');
+theme = setRoleLocked(theme, 'primary', true);
+theme = regenerateTheme(theme);
+
+console.log(themeColors(theme)); // The primary colour stays #315b50.
+```
+
+These functions return new theme objects. Manual edits are replaced on regeneration unless the
+role is locked. Changing a primary or accent fill recalculates its label colour.
+
+`generateTheme` accepts `mode`, `seed`, `variation`, `locked`, `overrides`, and `readability`.
+`createThemeSet` accepts the same options except `mode`, because it creates both modes.
+Use `overrides: { primary: '#315b50' }` to set a colour during generation.
+
+## Export CSS or JSON
+
+| Function | Returns |
+| --- | --- |
+| `themeToCssVariables(theme)` | A map of custom property names to colours. |
+| `exportCssVariables(theme)` | One theme as a CSS string. |
+| `exportThemeSetCss(themes)` | Light and dark CSS blocks. |
+| `exportJsonTokens(theme)` | One theme as a JSON-compatible object. |
+| `exportJsonTokensString(theme)` | One theme as a JSON string. |
+| `exportThemeSetJson(themes)` | An object with `light` and `dark` token documents. |
+
+CSS exports include `--hf-background`, `--hf-surface`, `--hf-text`, `--hf-primary`, `--hf-accent`,
+`--hf-on-primary`, and `--hf-on-accent`. Pass `{ includePalette: true }` to add `--hf-sample-1`
+and the remaining sampled colours.
+
+You can also set `prefix`, `selector`, `darkSelector`, `includeColorScheme`, and `indent`.
+CSS strings include `color-scheme` by default; the flat map contains only the colour variables.
+
+JSON colour tokens use `$type`, `$value`, and `$description` fields, with hex strings as values.
+Palette weights and contrast results are included by default. Use `{ includePalette: false,
+includeContrast: false }` to omit them. `exportJsonTokensString` also accepts `pretty` and `indent`.
+
+## Check contrast
+
+Theme generation adjusts lightness and chroma toward these default contrast targets:
+
+- `text: 7` for body text against the background and surface.
+- `ink: 4.5` for labels on primary and accent fills.
+- `ui: 3` for primary and accent fills against the background.
+
+Pass `readability: { text: 7, ink: 4.5, ui: 3 }` to change them. Use
+`checkThemeContrast(theme)` for the six foreground/background pairs and their ratios, or
+`isThemeReadable(theme, readability)` to check whether all pairs meet your targets.
+
+An override or manual edit can introduce poor contrast, and a requested target may be out of
+reach. Check the final theme, particularly after edits. These colour checks do not assess the
+accessibility of a complete page.
+
+The package also exports `contrastRatio`, `pickReadableInk`, `enforceContrast`, RGB/HSL/Oklab
+conversions, and colour mixing utilities. See the
+[export list](https://github.com/lame13/hueframe/blob/main/packages/hueframe/src/index.ts)
+for the full API; type declarations are included in the package.
+
+## Try the playground
+
+The [GitHub repository](https://github.com/lame13/hueframe) includes a Next.js playground with
+sample photos, editable roles, and two page templates. To run it locally:
+
+```bash
+git clone https://github.com/lame13/hueframe.git
+cd hueframe
+npm ci
+npm run dev
+```
+
+Open `http://localhost:3000`. The playground is separate from the npm package; installing
+`hueframe` does not install Next.js or React.
+
+## License
+
+[MIT](https://github.com/lame13/hueframe/blob/main/packages/hueframe/LICENSE).

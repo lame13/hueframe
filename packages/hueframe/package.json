@@ -1,8 +1,25 @@
 {
   "name": "hueframe",
   "version": "1.0.1",
-  "description": "Extract colours from an image, turn them into a usable website theme, and export CSS variables or JSON design tokens. Zero dependencies, framework independent.",
+  "description": "Turn image colors into light and dark website themes. Extract palettes, adjust contrast, and export CSS variables or JSON design tokens. Zero runtime dependencies.",
   "license": "MIT",
+  "author": {
+    "name": "Niko Minadze",
+    "url": "https://indexlane.dev"
+  },
+  "homepage": "https://indexlane.dev",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lame13/hueframe.git",
+    "directory": "packages/hueframe"
+  },
+  "bugs": {
+    "url": "https://github.com/lame13/hueframe/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "type": "module",
   "sideEffects": false,
   "main": "./dist/index.js",
@@ -22,20 +39,28 @@
     "LICENSE"
   ],
   "keywords": [
-    "colour",
     "color",
+    "colour",
     "palette",
+    "color-palette",
+    "color-extraction",
+    "dominant-color",
+    "image-palette",
     "theme",
+    "theme-generator",
     "css-variables",
     "design-tokens",
-    "image",
-    "extraction"
+    "dark-mode",
+    "contrast",
+    "oklab",
+    "typescript"
   ],
   "engines": {
     "node": ">=20.9.0"
   },
   "scripts": {
     "build": "tsc --project tsconfig.build.json",
+    "prepack": "npm run build",
     "typecheck": "tsc --project tsconfig.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
