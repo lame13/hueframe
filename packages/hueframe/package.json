@@ -1,0 +1,43 @@
+{
+  "name": "hueframe",
+  "version": "1.0.0",
+  "description": "Extract colours from an image, turn them into a usable website theme, and export CSS variables or JSON design tokens. Zero dependencies, framework independent.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "colour",
+    "color",
+    "palette",
+    "theme",
+    "css-variables",
+    "design-tokens",
+    "image",
+    "extraction"
+  ],
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "typecheck": "tsc --project tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  }
+}

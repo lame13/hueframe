@@ -1,0 +1,26 @@
+{
+  "name": "@hueframe/demo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Drop a photo, watch a webpage recolour itself, export the CSS.",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "hueframe": "*",
+    "next": "^16.3.5",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "@types/react": "^19.1.9",
+    "@types/react-dom": "^19.1.7",
+    "eslint": "^9.33.0",
+    "eslint-config-next": "^16.3.5"
+  }
+}
