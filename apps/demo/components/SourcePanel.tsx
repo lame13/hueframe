@@ -52,7 +52,7 @@ export function SourcePanel({
           data-empty={photo ? undefined : 'true'}
         >
           {photo ? (
-            <img className="dropzone__image" src={photo.url} alt={`Source: ${photo.name}`} />
+            <img key={photo.url} className="dropzone__image" src={photo.url} alt={`Source: ${photo.name}`} />
           ) : (
             <div className="dropzone__empty">
               <UploadIcon width={22} height={22} />

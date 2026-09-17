@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.0.2 - 2026-09-17
+
+### Fixed
+
+- Cancel superseded sample and upload requests, and discard late state updates so an earlier
+  image cannot replace the latest selection.
+- Run palette extraction in a Web Worker to keep the playground responsive while sampling.
+- Reuse completed sample palettes and avoid regenerating themes for unrelated UI changes.
+- Handle failed and cancelled image decodes without leaving the playground loading indefinitely.
+- Release replaced upload URLs and finished workers, and disable export while a new image is loading.
+
+### Added
+
+- Regression tests for image loading, cancellation, worker cleanup, and extraction failures.
+
 ## 1.0.1 - 2026-09-17
 
 ### Added

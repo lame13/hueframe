@@ -4,23 +4,46 @@ export interface RasterImage {
   readonly height: number;
 }
 
-async function decode(image: HTMLImageElement): Promise<void> {
-  if (typeof image.decode === 'function') {
-    try {
-      await image.decode();
-      return;
-    } catch {
-      // Some browsers reject decode() for images that are already usable.
+function decode(image: HTMLImageElement, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const cleanup = () => {
+      image.removeEventListener('load', loaded);
+      image.removeEventListener('error', failed);
+      signal?.removeEventListener('abort', aborted);
+    };
+    const loaded = () => {
+      cleanup();
+      resolve();
+    };
+    const failed = () => {
+      cleanup();
+      reject(new Error('Could not read that image.'));
+    };
+    const aborted = () => {
+      cleanup();
+      image.removeAttribute('src');
+      reject(signal?.reason);
+    };
+
+    // Listen before decode(): a rejected decode may follow an error event.
+    image.addEventListener('load', loaded, { once: true });
+    image.addEventListener('error', failed, { once: true });
+    signal?.addEventListener('abort', aborted, { once: true });
+
+    if (signal?.aborted) {
+      aborted();
+    } else if (image.complete) {
+      if (image.naturalWidth > 0) loaded();
+      else failed();
+    } else if (typeof image.decode === 'function') {
+      void image.decode().then(loaded, () => {
+        // A browser may reject decode() while still loading a usable image.
+        if (image.complete) {
+          if (image.naturalWidth > 0) loaded();
+          else failed();
+        }
+      });
     }
-  }
-  if (image.complete && image.naturalWidth > 0) {
-    return;
-  }
-  await new Promise<void>((resolve, reject) => {
-    image.addEventListener('load', () => resolve(), { once: true });
-    image.addEventListener('error', () => reject(new Error('Could not read that image.')), {
-      once: true,
-    });
   });
 }
 
@@ -30,13 +53,19 @@ async function decode(image: HTMLImageElement): Promise<void> {
  * Photos are downscaled before extraction: a 360px long edge is plenty for
  * picking up dominant colours and keeps the whole pass in a few milliseconds.
  */
-export async function loadRasterImage(url: string, maxEdge = 360): Promise<RasterImage> {
+export async function loadRasterImage(
+  url: string,
+  maxEdge = 360,
+  signal?: AbortSignal,
+): Promise<RasterImage> {
+  signal?.throwIfAborted();
   const image = new Image();
   if (/^https?:/i.test(url)) {
     image.crossOrigin = 'anonymous';
   }
   image.src = url;
-  await decode(image);
+  await decode(image, signal);
+  signal?.throwIfAborted();
 
   const naturalWidth = image.naturalWidth || image.width;
   const naturalHeight = image.naturalHeight || image.height;

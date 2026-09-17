@@ -1,6 +1,6 @@
 {
   "name": "@hueframe/demo",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "private": true,
   "description": "Drop a photo, watch a webpage recolour itself, export the CSS.",
   "scripts": {
@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "lint": "eslint ."
   },
   "dependencies": {

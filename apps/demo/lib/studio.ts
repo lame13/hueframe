@@ -126,7 +126,9 @@ export function initialStudioState(withSample: boolean): StudioState {
 }
 
 /** Both themes for the current palette, variation, locks and manual colours. */
-export function deriveThemes(state: StudioState): StudioThemes | null {
+export function deriveThemes(
+  state: Pick<StudioState, 'palette' | 'variation' | 'edits'>,
+): StudioThemes | null {
   if (state.palette.length === 0) {
     return null;
   }

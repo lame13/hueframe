@@ -1,6 +1,6 @@
 {
   "name": "hueframe",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Turn image colors into light and dark website themes. Extract palettes, adjust contrast, and export CSS variables or JSON design tokens. Zero runtime dependencies.",
   "license": "MIT",
   "author": {

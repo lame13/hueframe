@@ -1,8 +1,8 @@
 'use client';
 
-import { extractPalette } from 'hueframe';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { extractImagePalette } from './palette';
 import { firstImageFile, loadRasterImage } from './pixels';
 import {
   OPENING_PHOTO,
@@ -26,7 +26,7 @@ import {
   type StudioThemes,
   type TemplateId,
 } from './studio';
-import type { Theme, ThemeMode, ThemeRole } from 'hueframe';
+import type { SampledColor, Theme, ThemeMode, ThemeRole } from 'hueframe';
 
 export interface Studio {
   readonly state: StudioState;
@@ -75,41 +75,62 @@ export function useStudio({ withSample }: { withSample: boolean }): Studio {
   const [state, setState] = useState(() => initialStudioState(withSample));
   const [isDragging, setIsDragging] = useState(false);
   const objectUrl = useRef<string | null>(null);
-  const sampleStarted = useRef(false);
+  const userSelectedPhoto = useRef(false);
+  const activeLoad = useRef<AbortController | null>(null);
+  const samplePalettes = useRef(new Map<string, readonly SampledColor[]>());
   // Only the newest load may touch the state: colour extraction is async, so an
   // earlier photo can still be decoding when the next one arrives. Without this
   // guard the stale result could land last and paint the wrong palette.
   const loadId = useRef(0);
   const systemMode = useSystemMode();
 
-  const themes = useMemo(() => deriveThemes(state), [state]);
+  const { palette, variation, edits } = state;
+  const themes = useMemo(
+    () => deriveThemes({ palette, variation, edits }),
+    [palette, variation, edits],
+  );
   const effectiveMode = resolveMode(state.modePreference, systemMode);
   const activeTheme = themes ? themes[effectiveMode] : null;
 
   const ingest = useCallback(async (photo: SourcePhoto) => {
     const id = (loadId.current += 1);
-    setState((previous) => ({ ...previous, photo, status: 'extracting', error: null }));
+    activeLoad.current?.abort();
+    const controller = new AbortController();
+    activeLoad.current = controller;
+    const { signal } = controller;
+    const isCurrent = () => !signal.aborted && id === loadId.current;
+    setState((previous) => isCurrent()
+      ? { ...previous, photo, status: 'extracting', error: null }
+      : previous);
     try {
-      const raster = await loadRasterImage(photo.url);
-      const palette = extractPalette(raster, { count: PALETTE_SIZE });
-      if (id !== loadId.current) {
-        return;
+      let palette = photo.isSample ? samplePalettes.current.get(photo.url) : undefined;
+      if (!palette) {
+        const raster = await loadRasterImage(photo.url, 360, signal);
+        if (!isCurrent()) return;
+        palette = await extractImagePalette(raster, PALETTE_SIZE, signal);
+        if (!isCurrent()) return;
+        if (photo.isSample && palette.length > 0) {
+          samplePalettes.current.set(photo.url, palette);
+        }
       }
-      setState((previous) => withPalette(previous, photo, palette));
+      const result = palette;
+      setState((previous) => isCurrent() ? withPalette(previous, photo, result) : previous);
     } catch (error) {
-      if (id !== loadId.current) {
-        return;
-      }
-      setState((previous) => ({
+      if (!isCurrent()) return;
+      setState((previous) => isCurrent() ? ({
         ...previous,
         status: 'error',
         error: error instanceof Error ? error.message : 'Could not read that image.',
-      }));
+      }) : previous);
+    } finally {
+      if (activeLoad.current === controller) activeLoad.current = null;
     }
   }, []);
 
   const loadFile = useCallback(
     (file: File) => {
+      userSelectedPhoto.current = true;
+      activeLoad.current?.abort();
       if (objectUrl.current) {
         URL.revokeObjectURL(objectUrl.current);
       }
@@ -122,28 +143,30 @@ export function useStudio({ withSample }: { withSample: boolean }): Studio {
 
   const loadSample = useCallback(
     (sample: SamplePhoto) => {
+      userSelectedPhoto.current = true;
       void ingest(sampleToPhoto(sample));
+      if (objectUrl.current) {
+        URL.revokeObjectURL(objectUrl.current);
+        objectUrl.current = null;
+      }
     },
     [ingest],
   );
 
   // The playground opens with the sample photo already in place.
   useEffect(() => {
-    if (!withSample || sampleStarted.current) {
-      return;
+    if (withSample && !userSelectedPhoto.current) {
+      void ingest(sampleToPhoto(OPENING_PHOTO));
     }
-    sampleStarted.current = true;
-    void ingest(sampleToPhoto(OPENING_PHOTO));
-  }, [ingest, withSample]);
-
-  useEffect(
-    () => () => {
+    return () => {
+      loadId.current += 1;
+      activeLoad.current?.abort();
       if (objectUrl.current) {
         URL.revokeObjectURL(objectUrl.current);
+        objectUrl.current = null;
       }
-    },
-    [],
-  );
+    };
+  }, [ingest, withSample]);
 
   // Drop a photo anywhere, or paste one straight from the clipboard.
   useEffect(() => {
@@ -227,7 +250,7 @@ export function useStudio({ withSample }: { withSample: boolean }): Studio {
     activeTheme,
     effectiveMode,
     isDragging,
-    canExport: state.palette.length > 0 && activeTheme !== null,
+    canExport: state.status === 'ready' && activeTheme !== null,
     canReset: hasEdits(state) || state.variation > 0,
     status: state.status,
     loadFile,

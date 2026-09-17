@@ -114,7 +114,7 @@ photography — is CC0 (public domain, no attribution required) and served as We
 npm run dev            # build the package, then run the demo
 npm run build          # package (tsc) then demo (next build)
 npm run typecheck      # package + demo, strict
-npm test               # package unit tests (vitest)
+npm test               # package + playground unit tests (vitest)
 npm run lint --workspace @hueframe/demo  # demo lint (eslint, next config)
 ```
 
