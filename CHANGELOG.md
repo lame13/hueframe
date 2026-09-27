@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.4 - 2026-09-27
+
+### Changed
+
+- Update the live playground links in the repository and npm package READMEs to
+  https://nikocodes.com/playground/hueframe/.
+
 ## 1.0.3 - 2026-09-17
 
 ### Fixed

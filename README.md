@@ -2,7 +2,7 @@
 
 Drop a photo. Watch a working webpage recolour itself. Export the result.
 
-[Live playground](https://hueframe.on-forge.com/) ·
+[Live playground](https://nikocodes.com/playground/hueframe/) ·
 [Package documentation](packages/hueframe/README.md) · [IndexLane](https://indexlane.dev)
 
 `hueframe` is a framework-independent TypeScript package that turns an image into a usable website
@@ -22,7 +22,7 @@ in the demo — the demo only renders what the package returns.
 
 ## Try the playground
 
-Open the [live playground](https://hueframe.on-forge.com/) to try hueframe in your browser.
+Open the [live playground](https://nikocodes.com/playground/hueframe/) to try hueframe in your browser.
 
 To run it locally:
 

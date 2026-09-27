@@ -11,7 +11,7 @@ It works in browsers and Node.js, has no runtime dependencies, and includes Type
 
 Created by [Niko Minadze](https://indexlane.dev) at **IndexLane**.
 
-[Live playground](https://hueframe.on-forge.com/) ·
+[Live playground](https://nikocodes.com/playground/hueframe/) ·
 [GitHub](https://github.com/lame13/hueframe) ·
 [Report an issue](https://github.com/lame13/hueframe/issues) ·
 [IndexLane](https://indexlane.dev)
@@ -240,7 +240,7 @@ for the full API; type declarations are included in the package.
 
 ## Try the playground
 
-Try the [live playground](https://hueframe.on-forge.com/) with sample photos, editable roles,
+Try the [live playground](https://nikocodes.com/playground/hueframe/) with sample photos, editable roles,
 and two page templates.
 
 The [GitHub repository](https://github.com/lame13/hueframe) includes the playground source.
